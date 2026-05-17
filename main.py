@@ -121,4 +121,8 @@ app.add_handler(
 
 print("NeoHelper X Online ⚡")
 
-app.run_polling()
+try:
+    print("⚡ NeoHelper запускается...")
+    app.run_polling()
+except Exception as e:
+    print("ОШИБКА:", e)
