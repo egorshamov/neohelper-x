@@ -1,22 +1,13 @@
 import os
 import requests
-
-from telegram import (
-    Update,
-    ReplyKeyboardMarkup
-)
-
-from telegram.ext import (
-    Application,
-    CommandHandler,
-    MessageHandler,
-    ContextTypes,
-    filters
-)
+import telebot
 
 # КЛЮЧИ
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+BOT_TOKEN = os.getenv("TELEGRAM_TOKEN")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+# BOT
+bot = telebot.TeleBot(BOT_TOKEN)
 
 # AI
 def ask_ai(text):
@@ -32,11 +23,10 @@ def ask_ai(text):
 Ты NeoHelper X ⚡
 
 Ты:
-- очень умный AI
-- отвечаешь кратко
-- современный стиль
+- очень умный
+- современный
 - полезный
-- как premium assistant
+- отвечаешь кратко
 
 Запрос:
 {text}
@@ -47,10 +37,7 @@ def ask_ai(text):
         ]
     }
 
-    response = requests.post(
-        url,
-        json=data
-    )
+    response = requests.post(url, json=data)
 
     result = response.json()
 
@@ -58,71 +45,28 @@ def ask_ai(text):
         return result["candidates"][0]["content"]["parts"][0]["text"]
 
     except:
-        return "⚠️ AI временно недоступен"
+        return "⚠️ AI ошибка"
 
 # START
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+@bot.message_handler(commands=['start'])
+def start(message):
 
-    keyboard = [
-        ["💡 Идеи", "📚 Учёба"],
-        ["✍️ Тексты", "🚀 TikTok"],
-        ["🧠 AI Chat"]
-    ]
-
-    markup = ReplyKeyboardMarkup(
-        keyboard,
-        resize_keyboard=True
+    bot.reply_to(
+        message,
+        "⚡ NeoHelper X Online\n\nНапиши любой вопрос 👇"
     )
 
-    text = (
-        "⚡ NeoHelper X PRO\n\n"
-        "AI нового поколения.\n\n"
-        "Выбери режим 👇"
-    )
+# MESSAGE
+@bot.message_handler(func=lambda message: True)
+def handle(message):
 
-    await update.message.reply_text(
-        text,
-        reply_markup=markup
-    )
+    user_text = message.text
 
-# MESSAGES
-async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    answer = ask_ai(user_text)
 
-    user_text = update.message.text
+    bot.reply_to(message, answer)
 
-    prompts = {
-        "💡 Идеи": "Придумай 5 современных идей",
-        "📚 Учёба": "Объясни сложную тему просто",
-        "✍️ Тексты": "Напиши красивый современный текст",
-        "🚀 TikTok": "Дай вирусную TikTok идею"
-    }
+print("⚡ NeoHelper работает")
 
-    prompt = prompts.get(user_text, user_text)
-
-    answer = ask_ai(prompt)
-
-    await update.message.reply_text(answer)
-
-# APP
-app = Application.builder().token(
-    TELEGRAM_TOKEN
-).build()
-
-app.add_handler(
-    CommandHandler("start", start)
-)
-
-app.add_handler(
-    MessageHandler(
-        filters.TEXT,
-        handle
-    )
-)
-
-print("NeoHelper X Online ⚡")
-
-try:
-    print("⚡ NeoHelper запускается...")
-    app.run_polling()
-except Exception as e:
-    print("ОШИБКА:", e)
+# RUN
+bot.infinity_polling()
